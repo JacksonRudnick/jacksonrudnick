@@ -9,8 +9,8 @@ fn render_history(history: &Vec<Vec<Vec<bool>>>, dark_mode: bool) -> Document {
         .map_or(0, Vec::len);
     let mut document = Document::new()
         .set("viewBox", (0, 0, rows, cols))
-        .set("width", rows * 10)
-        .set("height", cols * 10)
+        .set("width", "100%")
+        .set("height", "auto")
         .set("preserveAspectRatio", "xMidYMid meet");
     if history.is_empty() {
         return document;
