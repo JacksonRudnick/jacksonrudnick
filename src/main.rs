@@ -10,16 +10,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
 
     let endpoint = "https://api.github.com/graphql";
-    let token = std::env::var("GITHUB_TOKEN")?;
+    let token = std::env::var("TOKEN")?;
+    let username = std::env::var("USERNAME")?;
     let authorization = format!("Bearer {token}");
     let headers = HashMap::from([
         ("Authorization", authorization.as_str()),
-        ("User-Agent", "jacksonrudnick"),
+        ("User-Agent", &username),
     ]);
     let client = reqwest_graphql::Client::new_with_headers(endpoint, headers);
-    let contributions = fetch_contributions(&client).await?;
+    let contributions = fetch_contributions(&client, &username).await?;
 
-    let weeks = contributions.viewer.contributions_collection.contribution_calendar.weeks;
+    let weeks = contributions.user.contributions_collection.contribution_calendar.weeks;
 
     let columns = weeks
         .iter()

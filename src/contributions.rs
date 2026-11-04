@@ -1,12 +1,14 @@
 use reqwest_graphql::Client;
 use serde::Deserialize;
+use std::collections::HashMap;
 
 pub(crate) async fn fetch_contributions(
     client: &Client<'_>,
+    username: &str,
 ) -> Result<Data, Box<dyn std::error::Error>> {
     let query = r#"
-    query {
-        viewer {
+    query($username: String!) {
+        user(login: $username) {
             contributionsCollection {
                 contributionCalendar {
                     weeks {
@@ -19,9 +21,10 @@ pub(crate) async fn fetch_contributions(
         }
     }
     "#;
+    let variables = HashMap::from([("username", username)]);
     let mut last_error = None;
     for attempt in 0..3 {
-        match client.query(query).await {
+        match client.query_with_vars(query, variables.clone()).await {
             Ok(data) => return Ok(data),
             Err(error) => {
                 last_error = Some(error.to_string());
@@ -37,12 +40,12 @@ pub(crate) async fn fetch_contributions(
 
 #[derive(Deserialize, Debug)]
 pub struct Data {
-    pub viewer: Viewer,
+    pub user: User,
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct Viewer {
+pub struct User {
     pub contributions_collection: ContributionsCollection,
 }
 
