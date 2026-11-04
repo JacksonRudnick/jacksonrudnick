@@ -22,14 +22,25 @@ pub(crate) async fn fetch_contributions(
     }
     "#;
     let variables = HashMap::from([("username", username)]);
+    const MAX_ATTEMPTS: u32 = 6;
+    const BASE_DELAY_SECS: u64 = 2;
+
     let mut last_error = None;
-    for attempt in 0..3 {
+    for attempt in 0..MAX_ATTEMPTS {
         match client.query_with_vars(query, variables.clone()).await {
             Ok(data) => return Ok(data),
             Err(error) => {
                 last_error = Some(error.to_string());
-                if attempt < 2 {
-                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                if attempt + 1 < MAX_ATTEMPTS {
+                    let backoff = BASE_DELAY_SECS.saturating_mul(1u64 << attempt);
+                    eprintln!(
+                        "GitHub GraphQL request failed (attempt {}/{}): {}. Retrying in {}s...",
+                        attempt + 1,
+                        MAX_ATTEMPTS,
+                        last_error.as_deref().unwrap_or("Unknown GraphQL error"),
+                        backoff
+                    );
+                    tokio::time::sleep(std::time::Duration::from_secs(backoff)).await;
                 }
             }
         }
