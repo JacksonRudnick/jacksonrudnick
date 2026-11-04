@@ -9,11 +9,9 @@ pub(crate) async fn fetch_contributions(
         viewer {
             contributionsCollection {
                 contributionCalendar {
-                    totalContributions
                     weeks {
                         contributionDays {
                             contributionCount
-                            date
                         }
                     }
                 }
@@ -21,10 +19,20 @@ pub(crate) async fn fetch_contributions(
         }
     }
     "#;
-    client
-        .query(query)
-        .await
-        .map_err(|error| std::io::Error::other(error.to_string()).into())
+    let mut last_error = None;
+    for attempt in 0..3 {
+        match client.query(query).await {
+            Ok(data) => return Ok(data),
+            Err(error) => {
+                last_error = Some(error.to_string());
+                if attempt < 2 {
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                }
+            }
+        }
+    }
+
+    Err(std::io::Error::other(last_error.unwrap_or_else(|| "Unknown GraphQL error".to_string())).into())
 }
 
 #[derive(Deserialize, Debug)]
@@ -47,7 +55,6 @@ pub struct ContributionsCollection {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ContributionCalendar {
-    pub total_contributions: u32,
     pub weeks: Vec<Week>,
 }
 
@@ -61,5 +68,4 @@ pub struct Week {
 #[serde(rename_all = "camelCase")]
 pub struct ContributionDay {
     pub contribution_count: u32,
-    pub date: String,
 }
