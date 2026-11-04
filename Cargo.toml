@@ -1,0 +1,11 @@
+[package]
+name = "jacksonrudnick"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+dotenvy = "0.15"
+reqwest-graphql = "1.0.0"
+serde = "1.0.229"
+svg = "0.18.0"
+tokio = { version = "1.54.1", features = ["full"] }
